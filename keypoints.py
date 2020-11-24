@@ -4,8 +4,6 @@ from __future__ import division
 import base64
 import glob
 import os
-import random
-import tkinter.messagebox
 from tkinter import *
 from tkinter import messagebox
 from tkinter.filedialog import askdirectory
@@ -22,7 +20,7 @@ def drawCircle(self, x, y, r, **kwargs):
     return self.create_oval(x-r, y-r, x+r, y+r, width=0, **kwargs)
 
 
-class LabelTool():
+class LabelTool:
     def __init__(self, master):
         # set up the main frame
         self.parent = master
