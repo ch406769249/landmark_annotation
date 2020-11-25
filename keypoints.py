@@ -114,10 +114,6 @@ class LabelTool:
         # 鼠标左键点击
         self.mainPanel.bind("<Button-1>", self.mouse_click)
         self.mainPanel.grid(row=0, column=0, rowspan=9, sticky=W+N+S+E)
-        # 快捷键
-        # self.parent.bind("s", self.save_all)
-        # self.parent.bind("a", self.prev_image)  # press 'a' to go backforward
-        # self.parent.bind("d", self.next_image)  # press 'd' to go forward
 
         # showing bbox info & delete bbox
         self.lb1 = Label(self.frame, text='关键点坐标:', font='Helvetica')
