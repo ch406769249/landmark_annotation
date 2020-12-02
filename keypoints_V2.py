@@ -73,6 +73,8 @@ class LabelTool:
         self.save_file_name = ''
         self.tkimg = None
 
+        self.can_fix = True
+
         # reference to kp
         self.pointIdList = []
         self.pointId = None
@@ -298,6 +300,13 @@ class LabelTool:
         labelname = self.imagename + '.txt'
         self.save_file_name = os.path.join(self.outDir, labelname)
 
+        if self.model_type == '2' and not os.path.exists(self.save_file_name):
+            self.can_fix = False
+            messagebox.showwarning(
+                title='警告', message="保存路径中无该图片的关键点文本，无法进行操作")
+            return
+        else:
+            self.can_fix = True
         # 如果保存路径中已经有保存的关键点，将它画出来
         if os.path.exists(self.save_file_name):
             with open(self.save_file_name) as f:
@@ -336,71 +345,73 @@ class LabelTool:
 
     # 保存关键点信息到文本
     def save_image(self):
+        if self.can_fix:
+            if len(self.pointList) == 0:
+                self.del_file()
+            else:
+                print("Save File Length: %d" % len(self.pointList))
 
-        if len(self.pointList) == 0:
-            self.del_file()
-        else:
-            print("Save File Length: %d" % len(self.pointList))
+                if self.save_file_name == '':
+                    print("save file name is empty")
+                    return
 
-            if self.save_file_name == '':
-                print("save file name is empty")
-                return
-
-            with open(self.save_file_name, 'w') as f:
-                # 关键点坐标
-                for point in self.pointList:
-                    f.write(' '.join(map(str, point)) + '\n')
-            print('Image No. %d saved' % self.cur)
+                with open(self.save_file_name, 'w') as f:
+                    # 关键点坐标
+                    for point in self.pointList:
+                        f.write(' '.join(map(str, point)) + '\n')
+                print('Image No. %d saved' % self.cur)
 
     # 鼠标点击（标注）
     def mouse_click(self, event):
-        if len(self.imageList) == 0:
-            messagebox.showwarning(
-                title='警告', message="请选择图片目录")
-            return
-        x1, y1 = event.x, event.y
-        # 0-1
-        x1 = x1 / self.img_w
-        y1 = y1 / self.img_h
-        if x1 < 1 and y1 < 1:
-
-            if self.model_type == '1':
-                # 标注模式，直接将手动标注的点进行显示
-                self.pointList.append((round(x1 * w0, 5), round(y1 * h0, 5)))
-                self.pointIdList.append(self.pointId)
-                self.pointId = None
-
-                self.listbox.insert(END, '%d:(%.2f, %.2f)' %
-                                    (len(self.pointIdList), x1, y1))
-
-                self.listbox.itemconfig(
-                    len(self.pointIdList) - 1, fg=self.COLORS[(len(self.pointIdList) - 1) % len(self.COLORS)])
-                draw_circle(self.mainPanel,
-                            x1 * self.img_w,
-                            y1 * self.img_h,
-                            3,
-                            fill=self.COLORS[(len(self.pointIdList) - 1) % len(self.COLORS)])
-            elif self.model_type == '2':
-                # 修正模式，得到初始点坐标
-                global x_old, y_old
-                x_old, y_old = event.x / self.img_w * w0, event.y / self.img_h * h0
-
-    # 鼠标释放（修正）
-    def mouse_release(self, event):
-        if self.model_type == '2':
+        if self.can_fix:
+            if len(self.imageList) == 0:
+                messagebox.showwarning(
+                    title='警告', message="请选择图片目录")
+                return
             x1, y1 = event.x, event.y
-            # 0-1之间
+            # 0-1
             x1 = x1 / self.img_w
             y1 = y1 / self.img_h
             if x1 < 1 and y1 < 1:
 
-                index = self.find_closer()
-                self.new_index.append(index)
-                self.new_index.sort()
+                if self.model_type == '1':
+                    # 标注模式，直接将手动标注的点进行显示
+                    self.pointList.append((round(x1 * w0, 5), round(y1 * h0, 5)))
+                    self.pointIdList.append(self.pointId)
+                    self.pointId = None
 
-                self.pointList[index] = (round(x1 * w0, 5), round(y1 * h0, 5))
-                self.save_image()
-                self.load_image(reload=True)
+                    self.listbox.insert(END, '%d:(%.2f, %.2f)' %
+                                        (len(self.pointIdList), x1, y1))
+
+                    self.listbox.itemconfig(
+                        len(self.pointIdList) - 1, fg=self.COLORS[(len(self.pointIdList) - 1) % len(self.COLORS)])
+                    draw_circle(self.mainPanel,
+                                x1 * self.img_w,
+                                y1 * self.img_h,
+                                3,
+                                fill=self.COLORS[(len(self.pointIdList) - 1) % len(self.COLORS)])
+                elif self.model_type == '2':
+                    # 修正模式，得到初始点坐标
+                    global x_old, y_old
+                    x_old, y_old = event.x / self.img_w * w0, event.y / self.img_h * h0
+
+    # 鼠标释放（修正）
+    def mouse_release(self, event):
+        if self.can_fix:
+            if self.model_type == '2':
+                x1, y1 = event.x, event.y
+                # 0-1之间
+                x1 = x1 / self.img_w
+                y1 = y1 / self.img_h
+                if x1 < 1 and y1 < 1:
+
+                    index = self.find_closer()
+                    self.new_index.append(index)
+                    self.new_index.sort()
+
+                    self.pointList[index] = (round(x1 * w0, 5), round(y1 * h0, 5))
+                    self.save_image()
+                    self.load_image(reload=True)
 
     # 修正模式，查找离鼠标点击时最接近的点
     def find_closer(self):
@@ -419,33 +430,35 @@ class LabelTool:
 
     # 删除按钮
     def del_point(self):
-        sel = self.listbox.curselection()
-        if len(sel) != 1:
-            return
-        idx = int(sel[0])
-        self.mainPanel.delete(self.pointIdList[idx])
-        self.pointIdList.pop(idx)
-        self.pointList.pop(idx)
-        self.listbox.delete(idx)
-        if idx in self.new_index:
-            self.new_index.pop(idx)
+        if self.can_fix:
+            sel = self.listbox.curselection()
+            if len(sel) != 1:
+                return
+            idx = int(sel[0])
+            self.mainPanel.delete(self.pointIdList[idx])
+            self.pointIdList.pop(idx)
+            self.pointList.pop(idx)
+            self.listbox.delete(idx)
+            if idx in self.new_index:
+                self.new_index.pop(idx)
 
-        if len(self.pointList) == 0:
-            self.del_file()
-        else:
-            self.save_image()
-        self.load_image()
+            if len(self.pointList) == 0:
+                self.del_file()
+            else:
+                self.save_image()
+            self.load_image()
 
     # 清空按钮
     def clear_point(self):
-        for idx in range(len(self.pointIdList)):
-            self.mainPanel.delete(self.pointIdList[idx])
-        self.listbox.delete(0, len(self.pointList))
-        self.pointIdList = []
-        self.pointList = []
+        if self.can_fix:
+            for idx in range(len(self.pointIdList)):
+                self.mainPanel.delete(self.pointIdList[idx])
+            self.listbox.delete(0, len(self.pointList))
+            self.pointIdList = []
+            self.pointList = []
 
-        self.del_file()
-        self.load_image()
+            self.del_file()
+            self.load_image()
 
     # 删除保存的文件
     def del_file(self):
