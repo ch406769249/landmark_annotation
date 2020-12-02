@@ -50,8 +50,7 @@ class LabelTool:
         self.parent.resizable(width=TRUE, height=TRUE)
 
         # 图片大小
-        self.img_w = 500
-        self.img_h = 500
+        self.img_w, self.img_h = 1, 1
 
         # self.COLORS = ['red', 'blue', 'pink', 'cyan', 'green', 'black',
         #                'FireBrick', 'Salmon', 'SaddleBrown',
@@ -95,29 +94,22 @@ class LabelTool:
                            command=self.get_save_dir, font='Helvetica')
         self.btn2.grid(row=1, column=2, sticky=E + W)
 
-        def_w = tk.StringVar(value='600')
-        def_h = tk.StringVar(value='600')
-        self.lbs_w = Label(self.frame, text='宽度:', font='Helvetica', anchor=E)
-        self.lbs_w.grid(row=2, column=1, sticky=E + W)
+        def_rate = tk.StringVar(value='1')
+        self.lbs_rate = Label(self.frame, text='缩放比例:', font='Helvetica', anchor=E)
+        self.lbs_rate.grid(row=2, column=1, sticky=E + W)
 
-        self.entry_w = Entry(self.frame, textvariable=def_w)
-        self.entry_w.grid(row=2, column=2, sticky=E + W)
-
-        self.lbs_h = Label(self.frame, text='高度:', font='Helvetica', anchor=E)
-        self.lbs_h.grid(row=3, column=1, sticky=E + W)
-
-        self.entry_h = Entry(self.frame, textvariable=def_h)
-        self.entry_h.grid(row=3, column=2, sticky=E + W)
+        self.entry_rate = Entry(self.frame, textvariable=def_rate)
+        self.entry_rate.grid(row=2, column=2, sticky=E + W)
 
         self.img_name_detail = StringVar()
         self.img_name_title = Label(self.frame, text='图片名称:', font='Helvetica', anchor=E)
         self.img_name = Label(self.frame, textvariable=self.img_name_detail)
 
-        self.img_name_title.grid(row=4, column=1, sticky=E + W)
-        self.img_name.grid(row=4, column=2, sticky=E + W)
+        self.img_name_title.grid(row=3, column=1, sticky=E + W)
+        self.img_name.grid(row=3, column=2, sticky=E + W)
 
         self.ldBtn = Button(self.frame, text="开始加载", font='Helvetica', command=self.load_dir)
-        self.ldBtn.grid(row=5, column=1, columnspan=2, sticky=N + E + W)
+        self.ldBtn.grid(row=4, column=1, columnspan=2, sticky=N + E + W)
 
         # main panel for labeling
         self.mainPanel = Canvas(self.frame, bg='lightgray')
@@ -130,20 +122,20 @@ class LabelTool:
 
         # showing bbox info & delete bbox
         self.lb1 = Label(self.frame, text='关键点坐标:', font='Helvetica')
-        self.lb1.grid(row=6, column=1, columnspan=2, sticky=N + E + W)
+        self.lb1.grid(row=5, column=1, columnspan=2, sticky=N + E + W)
 
         self.listbox = Listbox(self.frame)  # , width=30, height=15)
-        self.listbox.grid(row=7, column=1, columnspan=2, sticky=N + S + E + W)
+        self.listbox.grid(row=6, column=1, columnspan=2, sticky=N + S + E + W)
 
         self.btnDel = Button(self.frame, text='删除', font='Helvetica', command=self.del_point)
-        self.btnDel.grid(row=8, column=1, columnspan=2, sticky=S + E + W)
+        self.btnDel.grid(row=7, column=1, columnspan=2, sticky=S + E + W)
         self.btnClear = Button(
             self.frame, text='清空', font='Helvetica', command=self.clear_point)
-        self.btnClear.grid(row=9, column=1, columnspan=2, sticky=N + E + W)
+        self.btnClear.grid(row=8, column=1, columnspan=2, sticky=N + E + W)
 
         # control panel for image navigation
         self.ctrPanel = Frame(self.frame)
-        self.ctrPanel.grid(row=10, column=0, columnspan=3, sticky=E + W + S)
+        self.ctrPanel.grid(row=9, column=0, columnspan=3, sticky=E + W + S)
         self.prevBtn = Button(self.ctrPanel, text='<< Prev',
                               width=10, command=self.prev_image)
         self.prevBtn.pack(side=LEFT, padx=5, pady=3)
@@ -201,58 +193,65 @@ class LabelTool:
 
     # 加载选择的文件目录
     def load_dir(self):
-        # 选择模式
-        if self.model_type == "":
-            messagebox.showwarning(
-                title='警告', message="请选择操作模式,标注模式or修正模式")
-            return
 
-        # 读取并设置图片大小
-        if self.entry_h.get() == "" or self.entry_w.get() == "":
-            messagebox.showwarning(title="警告", message="不输入图片大小的情况下将默认设置为图片本身大小")
-        else:
-            self.img_h = int(self.entry_h.get())
-            self.img_w = int(self.entry_w.get())
-            print("image shape: (%d, %d)" % (self.img_w, self.img_h))
-
-        # 标注图片
-        self.imageList = glob.glob(os.path.join(self.imageDir, '*.jpg'))
-        self.imageList = sort_humanly(self.imageList)
-
-        # 关键点文档
-        self.txt_kp_List = glob.glob(os.path.join(self.outDir, '*.txt'))
-        self.txt_kp_List = sort_humanly(self.txt_kp_List)
-
-        # 修正过关键点的图片信息
-        self.af_ann_List = [[]] * len(self.imageList)
-
-        # 标注图片路径没有选择
         if len(self.imageList) == 0:
-            messagebox.showwarning(
-                title='警告', message="标注图片路径中没有jpg结尾的图片")
-            return
-        else:
-            print("num=%d" % (len(self.imageList)))
 
-        # 修正模式必须要有关键点文档
-        if self.model_type == "2":
-            if len(self.txt_kp_List) == 0:
+            # 选择模式
+            if self.model_type == "":
                 messagebox.showwarning(
-                    title='警告', message="修正模式下,保存路径中必须要有txt结尾的关键点文档")
+                    title='警告', message="请选择操作模式,标注模式or修正模式")
+                return
+
+            # 读取并设置图片大小
+            if self.entry_rate.get() == "" and int(self.entry_rate.get()) < 0:
+                messagebox.showwarning(title="警告", message="缩放比例必须大于0")
+
+            # 没有选择标注图片路径
+            if len(self.imageDir) == 0:
+                messagebox.showwarning(
+                    title='警告', message="请选择标注图片路径")
+                return
+            # 没有选择保存路径
+            if len(self.outDir) == 0:
+                messagebox.showwarning(
+                    title='警告', message="请选择保存路径")
+                return
+
+            # 标注图片
+            self.imageList = glob.glob(os.path.join(self.imageDir, '*.jpg'))
+            self.imageList = sort_humanly(self.imageList)
+
+            # 关键点文档
+            self.txt_kp_List = glob.glob(os.path.join(self.outDir, '*.txt'))
+            self.txt_kp_List = sort_humanly(self.txt_kp_List)
+
+            # 修正过关键点的图片信息
+            self.af_ann_List = [[]] * len(self.imageList)
+
+            # 标注图片路径没有选择
+            if len(self.imageList) == 0:
+                messagebox.showwarning(
+                    title='警告', message="标注图片路径中没有jpg结尾的图片")
                 return
             else:
-                print("num=%d" % (len(self.txt_kp_List)))
+                print("num=%d" % (len(self.imageList)))
 
-        # 默认当前为第一张图片
-        self.cur = 1
-        self.total = len(self.imageList)
+            if len(self.txt_kp_List) == 0:
+                # 修正模式必须要有关键点文档
+                if self.model_type == "2":
+                    messagebox.showwarning(
+                        title='警告', message="修正模式下,保存路径中必须要有txt结尾的关键点文档")
+                    return
 
-        # 创建保存路径
-        if not os.path.exists(self.outDir):
-            os.mkdir(self.outDir)
+            # 默认当前为第一张图片
+            self.cur = 1
+            self.total = len(self.imageList)
+
+            # 创建保存路径
+            if not os.path.exists(self.outDir):
+                os.mkdir(self.outDir)
 
         self.load_image()
-        print('%d images loaded from %s' % (self.total, self.imageDir))
 
     # 加载图片
     def load_image(self, reload=False):
@@ -275,9 +274,12 @@ class LabelTool:
         w0, h0 = pil_image.size
 
         # 缩放到指定大小
-        if self.entry_h.get() == "" or self.entry_w.get() == "":
+        if self.entry_rate.get() == "" or int(self.entry_rate.get()) == 0:
             # 无指定大小，用图片本身大小
             self.img_w, self.img_h = w0, h0
+        else:
+            self.img_w = int(w0 * int(self.entry_rate.get()))
+            self.img_h = int(h0 * int(self.entry_rate.get()))
 
         pil_image = pil_image.resize(
             (self.img_w, self.img_h), Image.ANTIALIAS)
